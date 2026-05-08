@@ -1,0 +1,2 @@
+rootProject.name = "android-vpn-app"
+include ':app'
