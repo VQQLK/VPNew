@@ -1,190 +1,44 @@
-# MyVPN Windows — Инструкция по установке и настройке
+# 🪟 Установка и настройка MyVPN на Windows
 
-## Протокол: VLESS + XTLS-Reality (Xray-core)
+## 1. Требования
+- Windows 10/11 (64‑бит)
+- Клиент v2rayN или Hiddify Next для Windows
 
----
+## 2. Установка клиента
+- **v2rayN:** скачайте с [официального GitHub‑релиза](https://github.com/2dust/v2rayN/releases), распакуйте архив и запустите `v2rayN.exe`.
+- **Hiddify Next:** скачайте с [официального GitHub‑релиза](https://github.com/hiddify/hiddify-next/releases/latest), установочный `.exe` или распакуйте портативную версию.
 
-## Часть 1 — Установка сервера (если ещё не установлен)
+## 3. Импорт конфигурации
+1. Скопируйте VLESS-ссылку, полученную от администратора сервера (она находится в файле `vless_link.txt`).
+2. Откройте v2rayN или Hiddify Next.
+3. В v2rayN: нажмите **«Сервер»** → **«Добавить из буфера обмена»**.
+4. В Hiddify Next: нажмите **«+»** → **«Импортировать из буфера обмена»**.
 
-Если сервер уже настроен через `setup_xray.sh` — переходите к Части 2.
+## 4. Подключение
+- В v2rayN: нажмите правой кнопкой мыши по добавленному серверу и выберите **«Подключиться»** (или используйте кнопку в главном окне).
+- В Hiddify Next: нажмите **«Click to Connect»**.
 
-```bash
-# На VPS (Ubuntu 20.04/22.04, root):
-chmod +x setup_xray.sh
-sudo bash setup_xray.sh
+## 5. Проверка
+- Откройте браузер и перейдите на `https://ifconfig.me` — должен отобразиться IP‑адрес вашего сервера.
+- Для полной проверки используйте `https://ipleak.net`.
 
-# Скачать client_config.json на ваш компьютер:
-scp root@YOUR_SERVER_IP:/root/vpn-config/client-config.json .
-```
-
-Откройте порт 443 в панели управления хостинга и на сервере:
-```bash
-ufw allow 443/tcp && ufw reload
-```
-
----
-
-## Часть 2 — Подготовка файлов
-
-### 2.1 Требования
-
-| Компонент | Версия | Ссылка |
-|---|---|---|
-| .NET SDK | 8.0+ | https://dotnet.microsoft.com/download |
-| Inno Setup | 6.x | https://jrsoftware.org/isinfo.php |
-| Xray-core | последняя | https://github.com/XTLS/Xray-core/releases |
-
-### 2.2 Скачивание xray.exe
-
-```
-1. https://github.com/XTLS/Xray-core/releases → Latest
-2. Скачайте: Xray-windows-64.zip
-3. Распакуйте, возьмите три файла:
-     xray.exe  |  geoip.dat  |  geosite.dat
-4. Поместите в: windows/installer/xray/
-```
-
-Итоговая структура папки `installer/`:
-```
-installer/
-├── setup_myvpn.iss
-└── xray/
-    ├── xray.exe
-    ├── geoip.dat
-    └── geosite.dat
-```
+## 6. Решение проблем
+- **Не подключается:** убедитесь, что в ссылке используется `pbk` (публичный ключ), а не `privateKey`.
+- **Системный прокси не работает:** в v2rayN проверьте, что включён режим «Системный прокси» (System Proxy).
+- **Файрвол:** разрешите v2rayN/Hiddify Next в брандмауэре Windows.
 
 ---
 
-## Часть 3 — Сборка
+## 🛡️ Дополнительная защита: маскировка и десинхронизация
 
-### 3.1 Сборка WPF-приложения
+1. **Если сервер использует gRPC (HTTP/2)**, ваш трафик выглядит как обычный просмотр веб-страниц.  
+   В клиенте выберите транспорт `grpc` и укажите `serviceName`, который вы получили от администратора сервера (обычно «default»).
 
-```cmd
-cd windows\src
+2. **Защита от активного зондирования (Onering)**  
+   Если администратор включил эту функцию, в поле `sni` следует ввести специальный домен (уникальный идентификатор), который он вам сообщил. Обычный сканер не сможет обнаружить ваш сервер.
 
-dotnet publish MyVPN.csproj ^
-  -c Release ^
-  -r win-x64 ^
-  --self-contained ^
-  -p:PublishSingleFile=true
-
-:: Результат: src\bin\Release\net8.0-windows\win-x64\publish\MyVPN.exe
-```
-
-Self-contained — .NET Runtime встроен, пользователям устанавливать .NET не нужно.
-
-### 3.2 Сборка установщика (Inno Setup)
-
-```
-1. Запустите Inno Setup Compiler
-2. File → Open → windows/installer/setup_myvpn.iss
-3. Build → Compile (F9)
-4. Результат: installer/output/setup_myvpn_2.0.0.exe
-```
-
----
-
-## Часть 4 — Установка
-
-### 4.1 Через установщик
-
-```
-1. Запустите setup_myvpn_2.0.0.exe от имени администратора
-2. Следуйте шагам мастера установки
-3. Установится в: C:\Program Files\MyVPN\
-```
-
-### 4.2 Portable (без установщика)
-
-```
-Скопируйте в одну папку:
-  MyVPN.exe + xray.exe + geoip.dat + geosite.dat
-Запускайте MyVPN.exe от имени администратора.
-```
-
----
-
-## Часть 5 — Использование
-
-> **Внимание!** Не используйте приватный ключ в VLESS-ссылке.
-> Вместо `privateKey` должен быть параметр `pbk` (публичный ключ).
-> Корректная ссылка находится на сервере: `/root/vpn-config/vless-link.txt`
-
-### 5.1 Импорт конфига
-
-```
-1. Откройте MyVPN
-2. Нажмите "Импорт config.json"
-3. Выберите client_config.json (полученный с сервера)
-4. В логе появится: "Конфиг импортирован"
-```
-
-### 5.2 Подключение
-
-```
-1. Нажмите "Подключить"
-2. Xray запускается в фоне → SOCKS5 на 127.0.0.1:10808
-3. Системный прокси Windows выставляется автоматически
-4. Статус: "● VLESS+Reality"
-5. Отображается публичный IP вашего VPS
-```
-
-> Системный прокси применяется к Chrome, Edge, Firefox и большинству
-> приложений Windows. Для полного туннелирования всего трафика используйте
-> клиент v2rayN с тем же client_config.json.
-
-### 5.3 Отключение
-
-```
-Нажмите "Отключить" — Xray останавливается,
-системный прокси снимается автоматически.
-```
-
----
-
-## Часть 6 — Диагностика
-
-### "xray.exe не найден"
-```
-Убедитесь что xray.exe лежит рядом с MyVPN.exe.
-Скачайте: https://github.com/XTLS/Xray-core/releases → Xray-windows-64.zip
-```
-
-### Интернет не работает после подключения
-```cmd
-:: Проверьте доступ к серверу:
-Test-NetConnection -ComputerName YOUR_SERVER_IP -Port 443
-
-:: Проверьте прокси:
-curl --proxy socks5://127.0.0.1:10808 https://api.ipify.org
-```
-
-### Прокси не снялся после закрытия приложения
-```
-Параметры Windows → Сеть и интернет → Прокси → Выключить
-Или вручную: HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings → ProxyEnable = 0
-```
-
-### Логи xray
-```
-Лог xray отображается прямо в окне приложения (нижняя панель).
-Вывод stdout/stderr xray показывается в реальном времени в лог-области.
-Для записи в файл добавьте к xray.exe аргумент: --log путь\к\xray.log
-```
-
----
-
-## Параметры безопасности
-
-| Параметр | Значение |
-|---|---|
-| Протокол | VLESS |
-| Transport | TCP |
-| Security | XTLS-Reality (TLS 1.3) |
-| Flow | xtls-rprx-vision |
-| SNI маскировка | www.microsoft.com |
-| TLS Fingerprint | Chrome |
-| Crypto | X25519 + AES-256-GCM |
-| Локальный SOCKS5 | 127.0.0.1:10808 |
-| Локальный HTTP | 127.0.0.1:10809 |
+3. **Обход пассивного DPI (рекомендовано для Роскомнадзора)**  
+   Установите утилиту `zapret`, которая разрушает сигнатуры VPN-трафика:  
+   - [Windows](https://github.com/bol-van/zapret-win-bundle)  
+   - [Linux/macOS](https://github.com/bol-van/zapret)  
+   Она не требует настройки сервера и работает прозрачно для всех приложений.
