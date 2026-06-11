@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.myvpn.macos</string>
+    <key>CFBundleName</key>
+    <string>MyVPN</string>
+    <key>CFBundleDisplayName</key>
+    <string>MyVPN</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>2.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <!-- Минимальная версия: macOS 13 Ventura -->
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 MyVPN Project</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <!-- Исходящие сетевые соединения (для api.ipify.org) -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <!-- Доступ к файлам пользователя (импорт config.json через NSOpenPanel) -->
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+</dict>
+</plist>
