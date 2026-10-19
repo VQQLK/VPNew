@@ -40,8 +40,8 @@ SERVER_IP=$(curl -s --connect-timeout 5 --max-time 10 https://api.ipify.org 2>/d
 [ -z "$SERVER_IP" ] && read -rp "Введите внешний IP сервера вручную: " SERVER_IP
 
 XRAY_PORT=443
-REALITY_DEST="www.microsoft.com:443"
-REALITY_SNI="www.microsoft.com"
+REALITY_SNI="${REALITY_SNI:-www.microsoft.com}"
+REALITY_DEST="${REALITY_DEST:-${REALITY_SNI}:443}"
 REALITY_FINGERPRINT="chrome"
 XRAY_CONFIG_DIR="/etc/xray"
 OUTPUT_DIR="/etc/xray/clients"
@@ -132,7 +132,7 @@ cat > "$XRAY_CONFIG_DIR/config.json" << CONF
           "dest":        "$REALITY_DEST",
           "xver":        0,
           "serverNames": [
-            "www.microsoft.com",
+            "$REALITY_SNI",
             "www.apple.com",
             "www.cloudflare.com"
           ],
@@ -331,7 +331,17 @@ cat > "$OUTPUT_DIR/client_config.json" << CLIENT
       },
       {
         "type":        "field",
+        "domain":      ["geosite:ru"],
+        "outboundTag": "direct"
+      },
+      {
+        "type":        "field",
         "ip":          ["geoip:cn","geoip:private"],
+        "outboundTag": "direct"
+      },
+      {
+        "type":        "field",
+        "ip":          ["geoip:ru"],
         "outboundTag": "direct"
       }
     ]
@@ -431,17 +441,19 @@ cat > "$CLIENT_DIR/client_config.json" << CLIENT
   "outbounds": [{
     "tag": "vless-out", "protocol": "vless",
     "settings": { "vnext": [{ "address": "$SERVER_IP", "port": 443, "users": [{ "id": "$CLIENT_UUID", "flow": "xtls-rprx-vision", "encryption": "none" }] }] },
-    "streamSettings": { "network": "tcp", "security": "reality", "realitySettings": { "serverName": "www.microsoft.com", "fingerprint": "chrome", "publicKey": "$NEW_PUBLIC", "shortId": "$NEW_SHORT_ID", "spiderX": "/" } }
+    "streamSettings": { "network": "tcp", "security": "reality", "realitySettings": { "serverName": "$REALITY_SNI", "fingerprint": "chrome", "publicKey": "$NEW_PUBLIC", "shortId": "$NEW_SHORT_ID", "spiderX": "/" } }
   }],
   "routing": { "domainStrategy": "IPIfNonMatch", "rules": [
     { "type": "field", "domain": ["geosite:category-ads-all"], "outboundTag": "block" },
     { "type": "field", "domain": ["geosite:cn"], "outboundTag": "direct" },
-    { "type": "field", "ip": ["geoip:cn","geoip:private"], "outboundTag": "direct" }
+    { "type": "field", "domain": ["geosite:ru"], "outboundTag": "direct" },
+    { "type": "field", "ip": ["geoip:cn","geoip:private"], "outboundTag": "direct" },
+    { "type": "field", "ip": ["geoip:ru"], "outboundTag": "direct" }
   ]}
 }
 CLIENT
 
-VLESS_LINK="vless://${CLIENT_UUID}@${SERVER_IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${NEW_PUBLIC}&sid=${NEW_SHORT_ID}&type=tcp&headerType=none#MyVPN-Reality"
+VLESS_LINK="vless://${CLIENT_UUID}@${SERVER_IP}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${REALITY_SNI}&fp=chrome&pbk=${NEW_PUBLIC}&sid=${NEW_SHORT_ID}&type=tcp&headerType=none#MyVPN-Reality"
 echo "$VLESS_LINK" > "$CLIENT_DIR/vless_link.txt"
 
 cp "$CLIENT_DIR/client_config.json" /root/vpn-config/client-config.json
